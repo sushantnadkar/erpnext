@@ -345,7 +345,7 @@ def close_or_unclose_sales_orders(names, status):
 @frappe.whitelist()
 def make_material_request(source_name, target_doc=None):
 	def postprocess(source, doc):
-		doc.material_request_type = "Purchase"
+		doc.material_request_type = "Manufacture"
 
 	def update_item(source, target, source_parent):
 		target.project = source_parent.project
