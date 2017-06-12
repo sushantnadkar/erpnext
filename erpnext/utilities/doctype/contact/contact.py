@@ -11,15 +11,22 @@ from erpnext.controllers.status_updater import StatusUpdater
 class Contact(StatusUpdater):
 	def autoname(self):
 		# concat first and last name
-		self.name = " ".join(filter(None,
+
+		full_name = " ".join(filter(None,
 			[cstr(self.get(f)).strip() for f in ["first_name", "last_name"]]))
-
-		# concat party name if reqd
+		
 		for fieldname in ("customer", "supplier", "sales_partner"):
-			if self.get(fieldname):
-				self.name = self.name + "-" + cstr(self.get(fieldname)).strip()
+			if self.get(fieldname) and full_name != self.get(fieldname):
+				full_name = full_name + "-" + cstr(self.get(fieldname)).strip()
 				break
-
+		
+		if frappe.db.get_value("Contact", full_name):
+			count = frappe.db.sql("""select ifnull(MAX(CAST(SUBSTRING_INDEX(name, ' ', -1) AS UNSIGNED)), 0) from tabContact
+				 where name like %s""", "%{0} - %".format(full_name), as_list=1)[0][0]
+			self.name = "{0} - {1}".format(full_name, cstr(cint(count) + 1))
+		else:
+			self.name = full_name
+	
 	def validate(self):
 		self.set_status()
 		self.validate_primary_contact()
