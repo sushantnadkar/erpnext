@@ -149,7 +149,7 @@ def copy_attributes_to_variant(item, variant):
 	from frappe.model import no_value_fields
 	for field in item.meta.fields:
 		if field.fieldtype not in no_value_fields and (not field.no_copy)\
-			and field.fieldname not in ("item_code", "item_name", "show_in_website", "show_variant_in_website"):
+			and field.fieldname not in ("item_code", "item_name", "standard_rate", "show_in_website", "show_variant_in_website"):
 			if variant.get(field.fieldname) != item.get(field.fieldname):
 				variant.set(field.fieldname, item.get(field.fieldname))
 	variant.variant_of = item.name
