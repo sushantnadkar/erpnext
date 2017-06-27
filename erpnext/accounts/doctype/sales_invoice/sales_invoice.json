@@ -4183,7 +4183,7 @@
  "istable": 0, 
  "max_attachments": 0, 
  "menu_index": 0, 
- "modified": "2017-01-18 13:21:13.226318", 
+ "modified": "2017-06-27 15:16:38.510360", 
  "modified_by": "Administrator", 
  "module": "Accounts", 
  "name": "Sales Invoice", 
@@ -4282,5 +4282,5 @@
  "sort_order": "DESC", 
  "timeline_field": "customer", 
  "title_field": "title", 
- "track_seen": 0
+ "track_seen": 1
 }
