@@ -3,7 +3,7 @@
 
 from __future__ import unicode_literals
 import frappe
-from frappe.utils import cstr, has_gravatar
+from frappe.utils import cstr, cint, has_gravatar
 from frappe import _
 
 from erpnext.controllers.status_updater import StatusUpdater
