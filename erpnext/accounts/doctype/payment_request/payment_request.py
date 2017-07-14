@@ -85,7 +85,7 @@ class PaymentRequest(Document):
 			frappe.set_user("Administrator")
 
 		payment_entry = self.create_payment_entry()
-		self.make_invoice()
+		#self.make_invoice()
 
 		return payment_entry
 
