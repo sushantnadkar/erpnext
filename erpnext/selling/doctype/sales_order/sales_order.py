@@ -371,7 +371,7 @@ def make_material_request(source_name, target_doc=None):
 				"parent": "sales_order",
 				"stock_uom": "uom"
 			},
-			"condition": lambda doc: frappe.db.get_value('Item', doc.item_code, "requires_ear_impression"),
+			"condition": lambda doc: frappe.db.get_value('Item', doc.item_code, "allow_production"),
 			"postprocess": update_item
 		}
 	}, target_doc, postprocess)
