@@ -13,6 +13,9 @@ class POSProfile(Document):
 	def validate(self):
 		self.check_for_duplicate()
 		self.validate_all_link_fields()
+		self.validate_duplicate_groups()
+		self.check_default_payment()
+		self.validate_customer_territory_group()
 
 	def check_for_duplicate(self):
 		res = frappe.db.sql("""select name, user from `tabPOS Profile`
@@ -36,6 +39,31 @@ class POSProfile(Document):
 				if link_dn and not frappe.db.exists({"doctype": link_dt,
 						"company": self.company, "name": link_dn}):
 					frappe.throw(_("{0} does not belong to Company {1}").format(link_dn, self.company))
+
+	def validate_duplicate_groups(self):
+		item_groups = [d.item_group for d in self.item_groups]
+		customer_groups = [d.customer_group for d in self.customer_groups]
+
+		if len(item_groups) != len(set(item_groups)):
+			frappe.throw(_("Duplicate item group found in the item group table"), title = "Duplicate Item Group")
+
+		if len(customer_groups) != len(set(customer_groups)):
+			frappe.throw(_("Duplicate customer group found in the cutomer group table"), title = "Duplicate Customer Group")
+
+	def check_default_payment(self):
+		if self.payments:
+			default_mode_of_payment = [d.default for d in self.payments if d.default]
+			if not default_mode_of_payment:
+				frappe.throw(_("Set default mode of payment"))
+
+			if len(default_mode_of_payment) > 1:
+				frappe.throw(_("Multiple default mode of payment is not allowed"))
+	def validate_customer_territory_group(self):
+		if not self.territory:
+			frappe.throw(_("Territory is Required in POS Profile"), title="Mandatory Field")
+
+		if not self.customer_group:
+			frappe.throw(_("Customer Group is Required in POS Profile"), title="Mandatory Field")
 
 	def before_save(self):
 		set_account_for_mode_of_payment(self)

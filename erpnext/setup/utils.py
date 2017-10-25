@@ -3,17 +3,9 @@
 
 from __future__ import unicode_literals
 import frappe
-from frappe import _, throw
+from frappe import _
 from frappe.utils import flt
-
-def get_company_currency(company):
-	currency = frappe.db.get_value("Company", company, "default_currency", cache=True)
-	if not currency:
-		currency = frappe.db.get_default("currency")
-	if not currency:
-		throw(_('Please specify Default Currency in Company Master and Global Defaults'))
-
-	return currency
+from frappe.utils import get_datetime_str, nowdate
 
 def get_root_of(doctype):
 	"""Get root element of a DocType with a tree structure"""
@@ -36,8 +28,7 @@ def before_tests():
 	if not frappe.get_list("Company"):
 		setup_complete({
 			"currency"			:"USD",
-			"first_name"		:"Test",
-			"last_name"			:"User",
+			"full_name"			:"Test User",
 			"company_name"		:"Wind Power LLC",
 			"timezone"			:"America/New_York",
 			"company_abbr"		:"WP",
@@ -50,8 +41,7 @@ def before_tests():
 			"email"				:"test@erpnext.com",
 			"password"			:"test",
 			"chart_of_accounts" : "Standard",
-			"domain"			: "Manufacturing",
-			
+			"domain"			: "Manufacturing"
 		})
 
 	frappe.db.sql("delete from `tabLeave Allocation`")
@@ -60,40 +50,75 @@ def before_tests():
 	frappe.db.sql("delete from `tabItem Price`")
 
 	frappe.db.set_value("Stock Settings", None, "auto_insert_price_list_rate_if_missing", 0)
+	enable_all_roles_and_domains()
 
 	frappe.db.commit()
 
 @frappe.whitelist()
-def get_exchange_rate(from_currency, to_currency):
+def get_exchange_rate(from_currency, to_currency, transaction_date=None):
+	if not transaction_date:
+		transaction_date = nowdate()
 	if not (from_currency and to_currency):
+		# manqala 19/09/2016: Should this be an empty return or should it throw and exception?
 		return
-	
+
 	if from_currency == to_currency:
 		return 1
-	
-	exchange = "%s-%s" % (from_currency, to_currency)
-	value = flt(frappe.db.get_value("Currency Exchange", exchange, "exchange_rate"))
 
-	if not value:
-		try:
-			cache = frappe.cache()
-			key = "currency_exchange_rate:{0}:{1}".format(from_currency, to_currency)
-			value = cache.get(key)
+	# cksgb 19/09/2016: get last entry in Currency Exchange with from_currency and to_currency.
+	entries = frappe.get_all("Currency Exchange", fields = ["exchange_rate"],
+		filters=[
+			["date", "<=", get_datetime_str(transaction_date)],
+			["from_currency", "=", from_currency],
+			["to_currency", "=", to_currency]
+		], order_by="date desc", limit=1)
 
-			if not value:
-				import requests
-				response = requests.get("http://api.fixer.io/latest", params={
-					"base": from_currency,
-					"symbols": to_currency
-				})
-				# expire in 6 hours
-				response.raise_for_status()
-				value = response.json()["rates"][to_currency]
-				cache.setex(key, value, 6 * 60 * 60)
+	if entries:
+		return flt(entries[0].exchange_rate)
 
-			return flt(value)
-		except:
-			frappe.msgprint(_("Unable to find exchange rate for {0} to {1}").format(from_currency, to_currency))
-			return 0.0
-	else:
-		return value
+	try:
+		cache = frappe.cache()
+		key = "currency_exchange_rate:{0}:{1}".format(from_currency, to_currency)
+		value = cache.get(key)
+
+		if not value:
+			import requests
+			api_url = "http://api.fixer.io/{0}".format(transaction_date)
+			response = requests.get(api_url, params={
+				"base": from_currency,
+				"symbols": to_currency
+			})
+			# expire in 6 hours
+			response.raise_for_status()
+			value = response.json()["rates"][to_currency]
+			cache.setex(key, value, 6 * 60 * 60)
+		return flt(value)
+	except:
+		frappe.msgprint(_("Unable to find exchange rate for {0} to {1} for key date {2}. Please create a Currency Exchange record manually").format(from_currency, to_currency, transaction_date))
+		return 0.0
+
+def enable_all_roles_and_domains():
+	""" enable all roles and domain for testing """
+	roles = frappe.get_list("Role", filters={"disabled": 1})
+	for role in roles:
+		_role = frappe.get_doc("Role", role.get("name"))
+		_role.disabled = 0
+		_role.flags.ignore_mandatory = True
+		_role.flags.ignore_permissions = True
+		_role.save()
+
+	# add all roles to users
+	user = frappe.get_doc("User", "Administrator")
+	user.add_roles(*[role.get("name") for role in roles])
+
+	domains = frappe.get_list("Domain")
+	if not domains:
+		return
+
+	domain_settings = frappe.get_doc("Domain Settings", "Domain Settings")
+	domain_settings.set("active_domains", [])
+	for domain in domains:
+		row = domain_settings.append("active_domains", {})
+		row.domain=domain.get("name")
+
+	domain_settings.save()

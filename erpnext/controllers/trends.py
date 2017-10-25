@@ -49,10 +49,10 @@ def get_data(filters, conditions):
 		posting_date = 't1.posting_date'
 
 	if conditions["based_on_select"] in ["t1.project,", "t2.project,"]:
-		cond = 'and '+ conditions["based_on_select"][:-1] +' IS Not NULL'
+		cond = ' and '+ conditions["based_on_select"][:-1] +' IS Not NULL'
 	
 	if conditions.get('trans') in ['Sales Order', 'Purchase Order']:
-		cond += "and t1.status != 'Closed'"
+		cond += " and t1.status != 'Closed'"
 
 	year_start_date, year_end_date = frappe.db.get_value("Fiscal Year",
 		filters.get('fiscal_year'), ["year_start_date", "year_end_date"])
@@ -147,9 +147,9 @@ def period_wise_columns_query(filters, trans):
 	else:
 		pwc = [_(filters.get("fiscal_year")) + " ("+_("Qty") + "):Float:120",
 			_(filters.get("fiscal_year")) + " ("+ _("Amt") + "):Currency:120"]
-		query_details = " SUM(t2.qty), SUM(t2.base_net_amount),"
+		query_details = " SUM(t2.stock_qty), SUM(t2.base_net_amount),"
 
-	query_details += 'SUM(t2.qty), SUM(t2.base_net_amount)'
+	query_details += 'SUM(t2.stock_qty), SUM(t2.base_net_amount)'
 	return pwc, query_details
 
 def get_period_wise_columns(bet_dates, period, pwc):
@@ -161,7 +161,7 @@ def get_period_wise_columns(bet_dates, period, pwc):
 			_(get_mon(bet_dates[0])) + "-" + _(get_mon(bet_dates[1])) + " (" + _("Amt") + "):Currency:120"]
 
 def get_period_wise_query(bet_dates, trans_date, query_details):
-	query_details += """SUM(IF(t1.%(trans_date)s BETWEEN '%(sd)s' AND '%(ed)s', t2.qty, NULL)),
+	query_details += """SUM(IF(t1.%(trans_date)s BETWEEN '%(sd)s' AND '%(ed)s', t2.stock_qty, NULL)),
 					SUM(IF(t1.%(trans_date)s BETWEEN '%(sd)s' AND '%(ed)s', t2.base_net_amount, NULL)),
 				""" % {"trans_date": trans_date, "sd": bet_dates[0],"ed": bet_dates[1]}
 	return query_details

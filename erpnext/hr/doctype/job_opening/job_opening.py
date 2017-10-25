@@ -7,8 +7,6 @@ from __future__ import unicode_literals
 import frappe
 
 from frappe.website.website_generator import WebsiteGenerator
-from frappe.utils import quoted
-from frappe.utils.user import get_fullname_and_avatar
 from frappe import _
 
 class JobOpening(WebsiteGenerator):
@@ -18,8 +16,9 @@ class JobOpening(WebsiteGenerator):
 		page_title_field = "job_title",
 	)
 
-	def make_route(self):
-		return 'jobs/' + self.scrub(self.job_title)
+	def validate(self):
+		if not self.route:
+			self.route = frappe.scrub(self.job_title).replace('_', '-')
 
 	def get_context(self, context):
 		context.parents = [{'name': 'jobs', 'title': _('All Jobs') }]

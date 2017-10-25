@@ -6,11 +6,14 @@ from __future__ import unicode_literals
 import frappe
 from frappe import msgprint, _
 from frappe.model.document import Document
+from frappe.desk.reportview import get_match_cond, get_filters_cond
 from frappe.utils import comma_and
 
 class ProgramEnrollment(Document):
 	def validate(self):
 		self.validate_duplication()
+		if not self.student_name:
+			self.student_name = frappe.db.get_value("Student", self.student, "title")
 	
 	def on_submit(self):
 		self.update_student_joining_date()
@@ -52,3 +55,56 @@ class ProgramEnrollment(Document):
 			fee_list = ["""<a href="#Form/Fees/%s" target="_blank">%s</a>""" % \
 				(fee, fee) for fee in fee_list]
 			msgprint(_("Fee Records Created - {0}").format(comma_and(fee_list)))
+
+	def get_courses(self):
+		return frappe.db.sql('''select course, course_name from `tabProgram Course` where parent = %s and required = 1''', (self.program), as_dict=1)
+
+
+@frappe.whitelist()
+def get_program_courses(doctype, txt, searchfield, start, page_len, filters):
+	if filters.get('program'):
+		return frappe.db.sql("""select course, course_name from `tabProgram Course`
+			where  parent = %(program)s and course like %(txt)s {match_cond}
+			order by
+				if(locate(%(_txt)s, course), locate(%(_txt)s, course), 99999),
+				idx desc,
+				`tabProgram Course`.course asc
+			limit {start}, {page_len}""".format(
+				match_cond=get_match_cond(doctype),
+				start=start,
+				page_len=page_len), {
+					"txt": "%{0}%".format(txt),
+					"_txt": txt.replace('%', ''),
+					"program": filters['program']
+				})
+
+
+@frappe.whitelist()
+def get_students(doctype, txt, searchfield, start, page_len, filters):
+	if not filters.get("academic_term"):
+		filters["academic_term"] = frappe.defaults.get_defaults().academic_term
+
+	if not filters.get("academic_year"):
+		filters["academic_year"] = frappe.defaults.get_defaults().academic_year
+
+	enrolled_students = frappe.get_list("Program Enrollment", filters={
+		"academic_term": filters.get('academic_term'),
+		"academic_year": filters.get('academic_year')
+	}, fields=["student"])
+
+	students = [d.student for d in enrolled_students] if enrolled_students else [""]
+
+	return frappe.db.sql("""select
+			name, title from tabStudent
+		where 
+			name not in (%s)
+		and 
+			`%s` LIKE %s
+		order by 
+			idx desc, name
+		limit %s, %s"""%(
+			", ".join(['%s']*len(students)), searchfield, "%s", "%s", "%s"),
+			tuple(students + ["%%%s%%" % txt, start, page_len]
+		)
+	)
+

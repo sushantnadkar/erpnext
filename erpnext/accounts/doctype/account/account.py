@@ -3,11 +3,12 @@
 
 from __future__ import unicode_literals
 import frappe
-from frappe.utils import cstr, cint
+from frappe.utils import cint, fmt_money
 from frappe import throw, _
 from frappe.model.document import Document
 
 class RootNotEditable(frappe.ValidationError): pass
+class BalanceMismatchError(frappe.ValidationError): pass
 
 class Account(Document):
 	nsm_parent_field = 'parent_account'
@@ -34,7 +35,6 @@ class Account(Document):
 		self.validate_group_or_ledger()
 		self.set_root_and_report_type()
 		self.validate_mandatory()
-		self.validate_warehouse_account()
 		self.validate_frozen_accounts_modifier()
 		self.validate_balance_must_be_debit_or_credit()
 		self.validate_account_currency()
@@ -161,31 +161,6 @@ class Account(Document):
 		if not self.report_type:
 			throw(_("Report Type is mandatory"))
 
-	def validate_warehouse_account(self):
-		if not cint(frappe.defaults.get_global_default("auto_accounting_for_stock")):
-			return
-			
-		if self.account_type == "Stock" and not cint(self.is_group):
-			if not self.warehouse:
-				throw(_("Warehouse is mandatory"))
-				
-			old_warehouse = cstr(frappe.db.get_value("Account", self.name, "warehouse"))
-			if old_warehouse != cstr(self.warehouse):
-				if old_warehouse:
-					self.validate_warehouse(old_warehouse)
-				if self.warehouse:
-					self.validate_warehouse(self.warehouse)
-					
-		elif self.warehouse:
-			self.warehouse = None
-	
-	def validate_warehouse(self, warehouse):
-		lft, rgt = frappe.db.get_value("Warehouse", warehouse, ["lft", "rgt"])
-
-		if lft and rgt:
-			if frappe.db.sql_list("""select sle.name from `tabStock Ledger Entry` sle where exists (select wh.name from
-				tabWarehouse wh where lft >= %s and rgt <= %s and sle.warehouse = wh.name)""", (lft, rgt)):
-				throw(_("Stock entries exist against Warehouse {0}, hence you cannot re-assign or modify it").format(warehouse))
 
 	def update_nsm_model(self):
 		"""update lft, rgt indices for nested set model"""

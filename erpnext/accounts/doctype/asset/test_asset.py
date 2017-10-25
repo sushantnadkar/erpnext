@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 
 import frappe
 import unittest
-from frappe.utils import cstr, nowdate, getdate
+from frappe.utils import cstr, nowdate, getdate, flt
 from erpnext.accounts.doctype.asset.depreciation import post_depreciation_entries, scrap_asset, restore_asset
 from erpnext.accounts.doctype.asset.asset import make_sales_invoice, make_purchase_invoice
 
@@ -119,6 +119,30 @@ class TestAsset(unittest.TestCase):
 			for d in asset.get("schedules")]
 
 		self.assertEqual(schedules, expected_schedules)
+		
+	def test_schedule_for_manual_method(self):
+		asset = frappe.get_doc("Asset", "Macbook Pro 1")
+		asset.depreciation_method = "Manual"
+		asset.schedules = []
+		for schedule_date, amount in [["2020-12-31", 40000], ["2021-06-30", 30000], ["2021-10-31", 20000]]:
+			asset.append("schedules", {
+				"schedule_date": schedule_date,
+				"depreciation_amount": amount
+			})
+		asset.save()
+
+		self.assertEqual(asset.status, "Draft")
+
+		expected_schedules = [
+			["2020-12-31", 40000, 40000],
+			["2021-06-30", 30000, 70000],
+			["2021-10-31", 20000, 90000]
+		]
+
+		schedules = [[cstr(d.schedule_date), d.depreciation_amount, d.accumulated_depreciation_amount]
+			for d in asset.get("schedules")]
+
+		self.assertEqual(schedules, expected_schedules)
 
 	def test_depreciation(self):
 		asset = frappe.get_doc("Asset", "Macbook Pro 1")
@@ -126,10 +150,15 @@ class TestAsset(unittest.TestCase):
 		asset.load_from_db()
 		self.assertEqual(asset.status, "Submitted")
 
+		frappe.db.set_value("Company", "_Test Company", "series_for_depreciation_entry", "DEPR-")
+
 		post_depreciation_entries(date="2021-01-01")
 		asset.load_from_db()
 
 		self.assertEqual(asset.status, "Partially Depreciated")
+
+		# check depreciation entry series
+		self.assertEqual(asset.get("schedules")[0].journal_entry[:4], "DEPR")
 
 		expected_gle = (
 			("_Test Accumulated Depreciations - _TC", 0.0, 30000.0),
@@ -142,6 +171,23 @@ class TestAsset(unittest.TestCase):
 
 		self.assertEqual(gle, expected_gle)
 		self.assertEqual(asset.get("value_after_depreciation"), 70000)
+		
+	def test_depreciation_entry_cancellation(self):
+		asset = frappe.get_doc("Asset", "Macbook Pro 1")
+		asset.submit()
+		post_depreciation_entries(date="2021-01-01")
+		
+		asset.load_from_db()
+		
+		# cancel depreciation entry
+		depr_entry = asset.get("schedules")[0].journal_entry
+		self.assertTrue(depr_entry)
+		frappe.get_doc("Journal Entry", depr_entry).cancel()
+		
+		asset.load_from_db()
+		depr_entry = asset.get("schedules")[0].journal_entry
+		self.assertFalse(depr_entry)
+		
 
 	def test_scrap_asset(self):
 		asset = frappe.get_doc("Asset", "Macbook Pro 1")
@@ -201,6 +247,23 @@ class TestAsset(unittest.TestCase):
 		si.cancel()
 
 		self.assertEqual(frappe.db.get_value("Asset", "Macbook Pro 1", "status"), "Partially Depreciated")
+
+	def test_asset_expected_value_after_useful_life(self):
+		asset = frappe.get_doc("Asset", "Macbook Pro 1")
+		asset.depreciation_method = "Straight Line"
+		asset.is_existing_asset = 1
+		asset.total_number_of_depreciations = 400
+		asset.gross_purchase_amount = 16866177.00
+		asset.expected_value_after_useful_life = 500000
+		asset.save()
+
+		accumulated_depreciation_after_full_schedule = \
+			max([d.accumulated_depreciation_amount for d in asset.get("schedules")])
+
+		asset_value_after_full_schedule = (flt(asset.gross_purchase_amount) -
+			flt(accumulated_depreciation_after_full_schedule))
+
+		self.assertTrue(asset.expected_value_after_useful_life >= asset_value_after_full_schedule)
 
 	def tearDown(self):
 		asset = frappe.get_doc("Asset", "Macbook Pro 1")
@@ -274,3 +337,6 @@ def set_depreciation_settings_in_company():
 	company.disposal_account = "_Test Gain/Loss on Asset Disposal - _TC"
 	company.depreciation_cost_center = "_Test Cost Center - _TC"
 	company.save()
+	
+	# Enable booking asset depreciation entry automatically
+	frappe.db.set_value("Accounts Settings", None, "book_asset_depreciation_entry_automatically", 1)

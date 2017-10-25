@@ -7,8 +7,45 @@ import frappe
 
 from frappe import _
 
+default_lead_sources = ["Existing Customer", "Reference", "Advertisement",
+	"Cold Calling", "Exhibition", "Supplier Reference", "Mass Mailing",
+	"Customer's Vendor", "Campaign", "Walk In"]
+
 def install(country=None):
 	records = [
+		# domains
+		{ 'doctype': 'Domain', 'domain': _('Distribution')},
+		{ 'doctype': 'Domain', 'domain': _('Manufacturing')},
+		{ 'doctype': 'Domain', 'domain': _('Retail')},
+		{ 'doctype': 'Domain', 'domain': _('Services')},
+		{ 'doctype': 'Domain', 'domain': _('Education')},
+		{ 'doctype': 'Domain', 'domain': _('Healthcare')},
+
+		# Setup Progress
+		{'doctype': "Setup Progress", "actions": [
+			{"action_name": _("Add Company"), "action_doctype": "Company", "min_doc_count": 1, "is_completed": 1,
+				"domains": '[]' },
+			{"action_name": _("Set Sales Target"), "action_doctype": "Company", "min_doc_count": 99,
+				"action_document": frappe.defaults.get_defaults().get("company") or '',
+				"action_field": "monthly_sales_target", "is_completed": 0,
+				"domains": '["Manufacturing", "Services", "Retail", "Distribution"]' },
+			{"action_name": _("Add Customers"), "action_doctype": "Customer", "min_doc_count": 1, "is_completed": 0,
+				"domains": '["Manufacturing", "Services", "Retail", "Distribution"]' },
+			{"action_name": _("Add Suppliers"), "action_doctype": "Supplier", "min_doc_count": 1, "is_completed": 0,
+				"domains": '["Manufacturing", "Services", "Retail", "Distribution"]' },
+			{"action_name": _("Add Products"), "action_doctype": "Item", "min_doc_count": 1, "is_completed": 0,
+				"domains": '["Manufacturing", "Services", "Retail", "Distribution"]' },
+			{"action_name": _("Add Programs"), "action_doctype": "Program", "min_doc_count": 1, "is_completed": 0,
+				"domains": '["Education"]' },
+			{"action_name": _("Add Instructors"), "action_doctype": "Instructor", "min_doc_count": 1, "is_completed": 0,
+				"domains": '["Education"]' },
+			{"action_name": _("Add Courses"), "action_doctype": "Course", "min_doc_count": 1, "is_completed": 0,
+				"domains": '["Education"]' },
+			{"action_name": _("Add Rooms"), "action_doctype": "Room", "min_doc_count": 1, "is_completed": 0,
+				"domains": '["Education"]' },
+			{"action_name": _("Add Users"), "action_doctype": "User", "min_doc_count": 4, "is_completed": 0,
+				"domains": '[]' }
+		]},
 
 		# address template
 		{'doctype':"Address Template", "country": country},
@@ -28,9 +65,12 @@ def install(country=None):
 			'is_group': 0, 'parent_item_group': _('All Item Groups') },
 
 		# salary component
-		{'doctype': 'Salary Component', 'salary_component': _('Income Tax'), 'description': _('Income Tax')},
-		{'doctype': 'Salary Component', 'salary_component': _('Basic'), 'description': _('Basic')},
-		
+		{'doctype': 'Salary Component', 'salary_component': _('Income Tax'), 'description': _('Income Tax'), 'type': 'Deduction'},
+		{'doctype': 'Salary Component', 'salary_component': _('Basic'), 'description': _('Basic'), 'type': 'Earning'},
+		{'doctype': 'Salary Component', 'salary_component': _('Arrear'), 'description': _('Arrear'), 'type': 'Earning'},
+		{'doctype': 'Salary Component', 'salary_component': _('Leave Encashment'), 'description': _('Leave Encashment'), 'type': 'Earning'},
+
+
 		# expense claim type
 		{'doctype': 'Expense Claim Type', 'name': _('Calls'), 'expense_type': _('Calls')},
 		{'doctype': 'Expense Claim Type', 'name': _('Food'), 'expense_type': _('Food')},
@@ -147,6 +187,7 @@ def install(country=None):
 		{'doctype': 'Activity Type', 'activity_type': _('Execution')},
 		{'doctype': 'Activity Type', 'activity_type': _('Communication')},
 
+		# Lead Source
 		{'doctype': "Item Attribute", "attribute_name": _("Size"), "item_attribute_values": [
 			{"attribute_value": _("Extra Small"), "abbr": "XS"},
 			{"attribute_value": _("Small"), "abbr": "S"},
@@ -167,6 +208,14 @@ def install(country=None):
 		{'doctype': "Email Account", "email_id": "support@example.com", "append_to": "Issue"},
 		{'doctype': "Email Account", "email_id": "jobs@example.com", "append_to": "Job Applicant"},
 
+		{'doctype': "Party Type", "party_type": "Customer"},
+		{'doctype': "Party Type", "party_type": "Supplier"},
+		{'doctype': "Party Type", "party_type": "Employee"},
+
+		{'doctype': "Project Type", "project_type": "Internal"},
+		{'doctype': "Project Type", "project_type": "External"},
+		{'doctype': "Project Type", "project_type": "Other"},
+
 		{"doctype": "Offer Term", "offer_term": _("Date of Joining")},
 		{"doctype": "Offer Term", "offer_term": _("Annual Salary")},
 		{"doctype": "Offer Term", "offer_term": _("Probationary Period")},
@@ -183,13 +232,21 @@ def install(country=None):
 		{'doctype': "Print Heading", 'print_heading': _("Credit Note")},
 		{'doctype': "Print Heading", 'print_heading': _("Debit Note")},
 
-		{"doctype": "Salary Component", "salary_component": _("Basic")},
-		{"doctype": "Salary Component", "salary_component": _("Income Tax")},
+		# Assessment Group
+		{'doctype': 'Assessment Group', 'assessment_group_name': _('All Assessment Groups'),
+			'is_group': 1, 'parent_assessment_group': ''},
+
 	]
 
 	from erpnext.setup.setup_wizard.industry_type import get_industry_types
 	records += [{"doctype":"Industry Type", "industry": d} for d in get_industry_types()]
 	# records += [{"doctype":"Operation", "operation": d} for d in get_operations()]
+
+	records += [{'doctype': 'Lead Source', 'source_name': _(d)} for d in default_lead_sources]
+
+	# Records for the Supplier Scorecard
+	from erpnext.buying.doctype.supplier_scorecard.supplier_scorecard import make_default_records
+	make_default_records()
 
 	from frappe.modules import scrub
 	for r in records:
@@ -203,7 +260,7 @@ def install(country=None):
 
 		try:
 			doc.insert(ignore_permissions=True)
-		except frappe.DuplicateEntryError, e:
+		except frappe.DuplicateEntryError as e:
 			# pass DuplicateEntryError and continue
 			if e.args and e.args[0]==doc.doctype and e.args[1]==doc.name:
 				# make sure DuplicateEntryError is for the exact same doc and not a related doc
@@ -211,3 +268,7 @@ def install(country=None):
 			else:
 				raise
 
+	# set default customer group and territory
+	selling_settings = frappe.get_doc("Selling Settings")
+	selling_settings.set_default_customer_group_and_territory()
+	selling_settings.save()

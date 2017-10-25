@@ -2,7 +2,7 @@
 # License: GNU General Public License v3. See license.txt
 
 from __future__ import unicode_literals
-import frappe
+import frappe, erpnext
 import frappe.defaults
 from frappe import msgprint, _
 from frappe.utils import cstr, flt, cint
@@ -27,6 +27,7 @@ class StockReconciliation(StockController):
 		self.remove_items_with_no_change()
 		self.validate_data()
 		self.validate_expense_account()
+		self.set_total_qty_and_amount()
 
 	def on_submit(self):
 		self.update_stock_ledger()
@@ -116,6 +117,10 @@ class StockReconciliation(StockController):
 					if buying_rate:
 						row.valuation_rate = buying_rate
 
+					else:
+						# get valuation rate from Item
+						row.valuation_rate = frappe.get_value('Item', row.item_code, 'valuation_rate')
+
 		# throw all validation messages
 		if self.validation_messages:
 			for msg in self.validation_messages:
@@ -138,18 +143,16 @@ class StockReconciliation(StockController):
 
 			# item should not be serialized
 			if item.has_serial_no == 1:
-				raise frappe.ValidationError, _("Serialized Item {0} cannot be updated \
-					using Stock Reconciliation").format(item_code)
+				raise frappe.ValidationError(_("Serialized Item {0} cannot be updated using Stock Reconciliation, please use Stock Entry").format(item_code))
 
 			# item managed batch-wise not allowed
 			if item.has_batch_no == 1:
-				raise frappe.ValidationError, _("Item: {0} managed batch-wise, can not be reconciled using \
-					Stock Reconciliation, instead use Stock Entry").format(item_code)
+				raise frappe.ValidationError(_("Batched Item {0} cannot be updated using Stock Reconciliation, instead use Stock Entry").format(item_code))
 
 			# docstatus should be < 2
 			validate_cancelled_item(item_code, item.docstatus, verbose=0)
 
-		except Exception, e:
+		except Exception as e:
 			self.validation_messages.append(_("Row # ") + ("%d: " % (row_num)) + cstr(e))
 
 	def update_stock_ledger(self):
@@ -228,7 +231,7 @@ class StockReconciliation(StockController):
 			self.expense_account, self.cost_center)
 
 	def validate_expense_account(self):
-		if not cint(frappe.defaults.get_global_default("auto_accounting_for_stock")):
+		if not cint(erpnext.is_perpetual_inventory_enabled(self.company)):
 			return
 
 		if not self.expense_account:
@@ -236,6 +239,13 @@ class StockReconciliation(StockController):
 		elif not frappe.db.sql("""select name from `tabStock Ledger Entry` limit 1"""):
 			if frappe.db.get_value("Account", self.expense_account, "report_type") == "Profit and Loss":
 				frappe.throw(_("Difference Account must be a Asset/Liability type account, since this Stock Reconciliation is an Opening Entry"), OpeningEntryAccountError)
+
+	def set_total_qty_and_amount(self):
+		for d in self.get("items"):
+			d.amount = flt(d.qty) * flt(d.valuation_rate)
+			d.current_amount = flt(d.current_qty) * flt(d.current_valuation_rate)
+			d.quantity_difference = flt(d.qty) - flt(d.current_qty)
+			d.amount_difference = flt(d.amount) - flt(d.current_amount)
 
 	def get_items_for(self, warehouse):
 		self.items = []
@@ -259,7 +269,8 @@ def get_items(warehouse, posting_date, posting_time):
 	items = frappe.get_list("Bin", fields=["item_code"], filters={"warehouse": warehouse}, as_list=1)
 
 	items += frappe.get_list("Item", fields=["name"], filters= {"is_stock_item": 1, "has_serial_no": 0,
-		"has_batch_no": 0, "has_variants": 0, "disabled": 0, "default_warehouse": warehouse}, as_list=1)
+		"has_batch_no": 0, "has_variants": 0, "disabled": 0, "default_warehouse": warehouse},
+			as_list=1)
 
 	res = []
 	for item in set(items):
@@ -272,6 +283,7 @@ def get_items(warehouse, posting_date, posting_time):
 				"item_code": item[0],
 				"warehouse": warehouse,
 				"qty": stock_bal[0],
+				"item_name": frappe.db.get_value('Item', item[0], 'item_name'),
 				"valuation_rate": stock_bal[1],
 				"current_qty": stock_bal[0],
 				"current_valuation_rate": stock_bal[1]

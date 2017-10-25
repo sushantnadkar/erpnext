@@ -33,9 +33,15 @@ def get_data():
 					"description": _("Point of Sale")
 				},
 				{
+					"type": "doctype",
+					"name": "Subscription",
+					"label": _("Subscription"),
+					"description": _("To make recurring documents")
+				},
+				{
 					"type": "report",
 					"name": "Accounts Receivable",
-					"doctype": "Sales Invoice",	
+					"doctype": "Sales Invoice",
 					"is_query_report": True
 				},
 				{
@@ -63,7 +69,7 @@ def get_data():
 				{
 					"type": "doctype",
 					"name": "Account",
-					"icon": "icon-sitemap",
+					"icon": "fa fa-sitemap",
 					"label": _("Chart of Accounts"),
 					"route": "Tree/Account",
 					"description": _("Tree of financial accounts."),
@@ -159,6 +165,11 @@ def get_data():
 					"is_query_report": True,
 					"doctype": "Journal Entry"
 				},
+				{
+					"type": "doctype",
+					"name": "Bank Guarantee",
+					"doctype": "Bank Guarantee"
+				},
 			]
 		},
 		{
@@ -194,12 +205,45 @@ def get_data():
 			]
 		},
 		{
+			"label": _("Goods and Services Tax (GST India)"),
+			"items": [
+				{
+					"type": "doctype",
+					"name": "GST Settings",
+				},
+				{
+					"type": "doctype",
+					"name": "GST HSN Code",
+				},
+				{
+					"type": "report",
+					"name": "GST Sales Register",
+					"is_query_report": True
+				},
+				{
+					"type": "report",
+					"name": "GST Purchase Register",
+					"is_query_report": True
+				},
+				{
+					"type": "report",
+					"name": "GST Itemised Sales Register",
+					"is_query_report": True
+				},
+				{
+					"type": "report",
+					"name": "GST Itemised Purchase Register",
+					"is_query_report": True
+				},
+			]
+		},
+		{
 			"label": _("Budget and Cost Center"),
 			"items": [
 				{
 					"type": "doctype",
 					"name": "Cost Center",
-					"icon": "icon-sitemap",
+					"icon": "fa fa-sitemap",
 					"label": _("Chart of Cost Centers"),
 					"route": "Tree/Cost Center",
 					"description": _("Tree of financial Cost Centers."),
@@ -244,7 +288,7 @@ def get_data():
 		},
 		{
 			"label": _("Setup"),
-			"icon": "icon-cog",
+			"icon": "fa fa-cog",
 			"items": [
 				{
 					"type": "doctype",
@@ -351,7 +395,7 @@ def get_data():
 		},
 		{
 			"label": _("Other Reports"),
-			"icon": "icon-table",
+			"icon": "fa fa-table",
 			"items": [
 				{
 					"type": "report",
@@ -368,6 +412,12 @@ def get_data():
 				{
 					"type": "report",
 					"name": "Trial Balance for Party",
+					"doctype": "GL Entry",
+					"is_query_report": True,
+				},
+				{
+					"type": "report",
+					"name": "Profitability Analysis",
 					"doctype": "GL Entry",
 					"is_query_report": True,
 				},
@@ -417,7 +467,7 @@ def get_data():
 		},
 		{
 			"label": _("Help"),
-			"icon": "icon-facetime-video",
+			"icon": "fa fa-facetime-video",
 			"items": [
 				{
 					"type": "help",

@@ -21,11 +21,19 @@ frappe.ui.form.on("Course", "refresh", function(frm) {
 			frappe.set_route("List", "Course Schedule");
 		});
 		
-		frm.add_custom_button(__("Assessment"), function() {
+		frm.add_custom_button(__("Assessment Plan"), function() {
 			frappe.route_options = {
 				course: frm.doc.name
 			}
-			frappe.set_route("List", "Assessment");
+			frappe.set_route("List", "Assessment Plan");
 		});
 	}
+
+	frm.set_query('default_grading_scale', function(){
+		return {
+			filters: {
+				docstatus: 1
+			}
+		}
+	});
 });

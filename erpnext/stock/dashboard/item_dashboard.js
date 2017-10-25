@@ -46,6 +46,7 @@ erpnext.stock.ItemDashboard = Class.extend({
 			args: {
 				item_code: this.item_code,
 				warehouse: this.warehouse,
+				item_group: this.item_group,
 				start: this.start,
 				sort_by: this.sort_by,
 				sort_order: this.sort_order,
@@ -170,11 +171,13 @@ erpnext.stock.move_item = function(item, source, target, actual_qty, rate, callb
 				var doc = frappe.model.get_new_doc('Stock Entry');
 				doc.from_warehouse = dialog.get_value('source');
 				doc.to_warehouse = dialog.get_value('target');
-				row = frappe.model.add_child(doc, 'items');
+				var row = frappe.model.add_child(doc, 'items');
 				row.item_code = dialog.get_value('item_code');
 				row.f_warehouse = dialog.get_value('target');
 				row.t_warehouse = dialog.get_value('target');
 				row.qty = dialog.get_value('qty');
+				row.conversion_factor = 1;
+				row.transfer_qty = dialog.get_value('qty');
 				row.basic_rate = dialog.get_value('rate');
 				frappe.set_route('Form', doc.doctype, doc.name);
 			})

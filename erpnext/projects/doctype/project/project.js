@@ -3,14 +3,23 @@
 
 frappe.ui.form.on("Project", {
 	setup: function(frm) {
-		frm.get_field('tasks').grid.editable_fields = [
-			{fieldname: 'title', columns: 3},
-			{fieldname: 'status', columns: 3},
-			{fieldname: 'start_date', columns: 2},
-			{fieldname: 'end_date', columns: 2}
-		];
-
+		frm.set_indicator_formatter('title',
+			function(doc) {
+				let indicator = 'orange';
+				if (doc.status == 'Overdue') {
+					indicator = 'red';
+				}
+				else if (doc.status == 'Cancelled') {
+					indicator = 'dark grey';
+				}
+				else if (doc.status == 'Closed') {
+					indicator = 'green';
+				}
+				return indicator;
+			}
+		);
 	},
+
 	onload: function(frm) {
 		var so = frappe.meta.get_docfield("Project", "sales_order");
 		so.get_route_options_for_new_doc = function(field) {
@@ -22,12 +31,12 @@ frappe.ui.form.on("Project", {
 		}
 
 		frm.set_query('customer', 'erpnext.controllers.queries.customer_query');
-		
+
 		frm.set_query("user", "users", function() {
-					return {
-						query:"erpnext.projects.doctype.project.project.get_users_for_project"
-					}
-				});
+			return {
+				query:"erpnext.projects.doctype.project.project.get_users_for_project"
+			}
+		});
 
 		// sales order
 		frm.set_query('sales_order', function() {
@@ -44,6 +53,7 @@ frappe.ui.form.on("Project", {
 			}
 		});
 	},
+
 	refresh: function(frm) {
 		if(frm.doc.__islocal) {
 			frm.web_link && frm.web_link.remove();
@@ -52,9 +62,8 @@ frappe.ui.form.on("Project", {
 
 			if(frappe.model.can_read("Task")) {
 				frm.add_custom_button(__("Gantt Chart"), function() {
-					frappe.route_options = {"project": frm.doc.name,
-						"start": frm.doc.expected_start_date, "end": frm.doc.expected_end_date};
-					frappe.set_route("Gantt", "Task");
+					frappe.route_options = {"project": frm.doc.name};
+					frappe.set_route("List", "Task", "Gantt");
 				});
 			}
 
@@ -87,7 +96,7 @@ frappe.ui.form.on("Project", {
 			section.on('click', '.time-sheet-link', function() {
 				var activity_type = $(this).attr('data-activity_type');
 				frappe.set_route('List', 'Timesheet',
-					{'activity_type': activity_type, 'project': frm.doc.name});
+					{'activity_type': activity_type, 'project': frm.doc.name, 'status': ["!=", "Cancelled"]});
 			});
 		}
 	}
@@ -99,11 +108,10 @@ frappe.ui.form.on("Project Task", {
 		if(doc.task_id) {
 			frappe.set_route("Form", "Task", doc.task_id);
 		} else {
-			msgprint(__("Save the document first."));
+			frappe.msgprint(__("Save the document first."));
 		}
 	},
 	status: function(frm, doctype, name) {
 		frm.trigger('tasks_refresh');
 	},
 });
-
