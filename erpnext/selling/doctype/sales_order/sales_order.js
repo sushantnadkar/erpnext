@@ -214,7 +214,7 @@ erpnext.selling.SalesOrderController = erpnext.selling.SellingController.extend(
 								{fieldtype:'Float', fieldname:'pending_qty', reqd: 1,
 									label: __('Qty'), in_list_view:1},
 								{fieldtype:'Data', fieldname:'sales_order_item', reqd: 1,
-									label: __('Sales Order Item'), hidden:1}
+									label: __('Sales Order Item'), in_list_view:1}
 							],
 							get_data: function() {
 								return r.message
@@ -226,10 +226,45 @@ erpnext.selling.SalesOrderController = erpnext.selling.SellingController.extend(
 						fields: fields,
 						primary_action: function() {
 							var data = d.get_values();
+
+							data_object_items = [];
+							for(i = 0; i < data["items"].length; i++) {
+								data_object_items.push(data.items[i].sales_order_item);
+							}
+
+							visible_rows = $("body > div.modal.fade.in > div.modal-dialog > div > div.modal-body.ui-front > \
+							div > div.form-page > div > div > div > form > div > div > div > div.grid-body > \
+							div.rows > div");
+
+							visible_items = [];
+
+							$(visible_rows).each(function() {
+								visible_items.push($(this).find("div[data-fieldname=\"sales_order_item\"] .static-area.ellipsis").text());
+							});
+
+							var selected_data = {};
+							var item_data = [];
+							for (i = 0; i < data["items"].length; i++) {
+								for (j = 0; j < visible_items.length; j++) {
+									if (data.items[i].sales_order_item == visible_items[j]) {
+										item_data.push({
+											"bom": data.items[i].bom,
+											"idx": data.items[i].idx,
+											"item_code": data.items[i].item_code,
+											"pending_qty": data.items[i].pending_qty,
+											"sales_order_item": data.items[i].sales_order_item,
+											"warehouse": data.items[i].warehouse
+										});
+									}
+								}
+							}
+
+							selected_data["items"] = item_data;
+
 							me.frm.call({
 								method: 'make_production_orders',
 								args: {
-									items: data,
+									items: selected_data,
 									company: me.frm.doc.company,
 									sales_order: me.frm.docname,
 									project: me.frm.project
