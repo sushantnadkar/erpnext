@@ -232,9 +232,7 @@ erpnext.selling.SalesOrderController = erpnext.selling.SellingController.extend(
 								data_object_items.push(data.items[i].sales_order_item);
 							}
 
-							visible_rows = $("body > div.modal.fade.in > div.modal-dialog > div > div.modal-body.ui-front > \
-							div > div.form-page > div > div > div > form > div > div > div > div.grid-body > \
-							div.rows > div");
+							visible_rows = $(".modal-dialog:has(div[data-fieldtype=\"Table\"][data-fieldname=\"items\"]) .grid-body .grid-row");
 
 							visible_items = [];
 
