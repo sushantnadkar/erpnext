@@ -232,7 +232,7 @@ erpnext.selling.SalesOrderController = erpnext.selling.SellingController.extend(
 								data_object_items.push(data.items[i].sales_order_item);
 							}
 
-							visible_rows = $(".modal-dialog:has(div[data-fieldtype=\"Table\"][data-fieldname=\"items\"]) .grid-body .grid-row");
+							visible_rows = d.get_field("items").$wrapper.find(".grid-body .grid-row");
 
 							visible_items = [];
 
@@ -242,20 +242,19 @@ erpnext.selling.SalesOrderController = erpnext.selling.SellingController.extend(
 
 							var selected_data = {};
 							var item_data = [];
-							for (i = 0; i < data["items"].length; i++) {
-								for (j = 0; j < visible_items.length; j++) {
-									if (data.items[i].sales_order_item == visible_items[j]) {
-										item_data.push({
-											"bom": data.items[i].bom,
-											"idx": data.items[i].idx,
-											"item_code": data.items[i].item_code,
-											"pending_qty": data.items[i].pending_qty,
-											"sales_order_item": data.items[i].sales_order_item,
-											"warehouse": data.items[i].warehouse
-										});
-									}
-								}
-							}
+
+							data["items"]
+								.filter(item => { return visible_items.indexOf(item.sales_order_item)>=0; })
+								.forEach((item, i) => {
+									item_data.push({
+										"bom": item.bom,
+										"idx": item.idx,
+										"item_code": item.item_code,
+										"pending_qty": item.pending_qty,
+										"sales_order_item": item.sales_order_item,
+										"warehouse": item.warehouse
+									});
+								});
 
 							selected_data["items"] = item_data;
 
