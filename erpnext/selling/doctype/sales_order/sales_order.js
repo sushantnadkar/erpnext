@@ -283,6 +283,9 @@ erpnext.selling.SalesOrderController = erpnext.selling.SellingController.extend(
 						},
 						primary_action_label: __('Make')
 					});
+					d.$wrapper.find("div[data-fieldname=\"sales_order_item\"]").hide();
+					d.$wrapper.find("div[data-fieldname=\"item_code\"]").removeClass("col-xs-3").addClass("col-xs-4");
+					d.$wrapper.find("div[data-fieldname=\"bom\"]").removeClass("col-xs-3").addClass("col-xs-4");
 					d.show();
 				}
 			}
