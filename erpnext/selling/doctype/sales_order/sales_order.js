@@ -218,7 +218,7 @@ erpnext.selling.SalesOrderController = erpnext.selling.SellingController.extend(
 								{fieldtype:'Float', fieldname:'pending_qty', reqd: 1,
 									label: __('Qty'), in_list_view:1},
 								{fieldtype:'Data', fieldname:'sales_order_item', reqd: 1,
-									label: __('Sales Order Item'), hidden:1}
+									label: __('Sales Order Item'), in_list_view:1}
 							],
 							get_data: function() {
 								return r.message
@@ -230,10 +230,42 @@ erpnext.selling.SalesOrderController = erpnext.selling.SellingController.extend(
 						fields: fields,
 						primary_action: function() {
 							var data = d.get_values();
+
+							data_object_items = [];
+							for(i = 0; i < data["items"].length; i++) {
+								data_object_items.push(data.items[i].sales_order_item);
+							}
+
+							visible_rows = d.get_field("items").$wrapper.find(".grid-body .grid-row");
+
+							visible_items = [];
+
+							$(visible_rows).each(function() {
+								visible_items.push($(this).find("div[data-fieldname=\"sales_order_item\"] .static-area.ellipsis").text());
+							});
+
+							var selected_data = {};
+							var item_data = [];
+
+							data["items"]
+								.filter(item => { return visible_items.indexOf(item.sales_order_item)>=0; })
+								.forEach((item, i) => {
+									item_data.push({
+										"bom": item.bom,
+										"idx": item.idx,
+										"item_code": item.item_code,
+										"pending_qty": item.pending_qty,
+										"sales_order_item": item.sales_order_item,
+										"warehouse": item.warehouse
+									});
+								});
+
+							selected_data["items"] = item_data;
+
 							me.frm.call({
 								method: 'make_production_orders',
 								args: {
-									items: data,
+									items: selected_data,
 									company: me.frm.doc.company,
 									sales_order: me.frm.docname,
 									project: me.frm.project
@@ -255,6 +287,9 @@ erpnext.selling.SalesOrderController = erpnext.selling.SellingController.extend(
 						},
 						primary_action_label: __('Make')
 					});
+					d.$wrapper.find("div[data-fieldname=\"sales_order_item\"]").hide();
+					d.$wrapper.find("div[data-fieldname=\"item_code\"]").removeClass("col-xs-3").addClass("col-xs-4");
+					d.$wrapper.find("div[data-fieldname=\"bom\"]").removeClass("col-xs-3").addClass("col-xs-4");
 					d.show();
 				}
 			}
