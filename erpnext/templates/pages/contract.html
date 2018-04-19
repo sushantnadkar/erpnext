@@ -1,0 +1,20 @@
+{% extends "templates/web.html" %}
+{% from "erpnext/templates/includes/order/order_macros.html" import item_name_and_description %}
+
+{% block breadcrumbs %}
+	{% include "templates/includes/breadcrumbs.html" %}
+{% endblock %}
+
+{% block title %}
+	{{ doc.name }}
+{% endblock %}
+
+{% block header %}
+	<h1>{{ doc.name }}</h1>
+{% endblock %}
+
+{% block header_actions %}
+	<a class='btn btn-xs btn-default' href='/printview?doctype={{ doc.doctype }}&name={{ doc.name }}&format={{ print_format }}' target="_blank" rel="noopener noreferrer">{{ _("Print") }}</a>
+{% endblock %}
+
+<p>"HELLO WORLD!"</p>

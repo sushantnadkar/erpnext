@@ -109,6 +109,13 @@ website_route_rules = [
 			"parents": [{"label": _("Shipments"), "route": "shipments"}]
 		}
 	},
+	{"from_route": "/contracts", "to_route": "Contract"},
+	{"from_route": "/contracts/<path:name>", "to_route": "contract",
+		"defaults": {
+			"doctype": "Contract",
+			"parents": [{"label": _("Contracts"), "route": "contracts"}]
+		}
+	},
 	{"from_route": "/rfq", "to_route": "Request for Quotation"},
 	{"from_route": "/rfq/<path:name>", "to_route": "rfq",
 		"defaults": {
