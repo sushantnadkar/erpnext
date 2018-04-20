@@ -4,25 +4,47 @@
 
 from __future__ import unicode_literals
 
+import frappe
 from frappe.model.document import Document
-from frappe.utils import get_datetime, nowdate
+from frappe.utils import getdate, nowdate
 
 
 class Contract(Document):
 	def validate(self):
+		self.validate_dates()
 		self.update_status()
 
 	def on_update_after_submit(self):
 		self.update_status()
 
+	def validate_dates(self):
+		if self.end_date < self.start_date:
+			frappe.throw("End Date cannot be before Start Date!")
+
+
 	def update_status(self):
-		now_date = get_datetime(nowdate())
-		start_date = get_datetime(self.start_date)
-		end_date = get_datetime(self.end_date)
+		start_date = self.start_date
+		end_date = self.end_date
 
 		if self.is_signed:
-			status = "Active" if start_date < now_date < end_date else "Inactive"
+			status = get_status(start_date, end_date)
 		else:
 			status = "Unsigned"
 
 		self.status = status
+
+
+def get_status(start_date, end_date):
+	if not end_date:
+		return "Active"
+	now_date = getdate(nowdate())
+	status = "Active" if start_date < now_date < end_date else "Inactive"
+	return status
+
+
+def update_status_for_contracts():
+	contracts = frappe.get_all("Contract", filters={"is_signed": True, "docstatus": 1}, fields=["name", "start_date", "end_date"])
+	for contract in contracts:
+		status = get_status(contract.get("start_date"),
+							contract.get("end_date"))
+		frappe.db.set_value("Contract", contract.get("name"), "status", status)
