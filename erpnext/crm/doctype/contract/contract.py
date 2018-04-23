@@ -23,15 +23,10 @@ class Contract(Document):
 
 
 	def update_status(self):
-		start_date = self.start_date
-		end_date = self.end_date
-
 		if self.is_signed:
-			status = get_status(start_date, end_date)
+			self.status = get_status(self.start_date, self.end_date)
 		else:
-			status = "Unsigned"
-
-		self.status = status
+			self.status = "Unsigned"
 
 
 def get_status(start_date, end_date):
