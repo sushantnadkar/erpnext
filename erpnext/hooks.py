@@ -176,7 +176,8 @@ has_website_permission = {
 	"Timesheet": "erpnext.controllers.website_list_for_contact.has_website_permission",
 	"Lab Test": "erpnext.healthcare.web_form.lab_test.lab_test.has_website_permission",
 	"Consultation": "erpnext.healthcare.web_form.prescription.prescription.has_website_permission",
-	"Patient Appointment": "erpnext.healthcare.web_form.patient_appointments.patient_appointments.has_website_permission"
+	"Patient Appointment": "erpnext.healthcare.web_form.patient_appointments.patient_appointments.has_website_permission",
+	"Contract": "erpnext.crm.doctype.contract.contract.has_website_permission"
 }
 
 dump_report_map = "erpnext.startup.report_data_map.data_map"

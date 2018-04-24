@@ -10,11 +10,23 @@
 {% endblock %}
 
 {% block header %}
-	<h1>{{ doc.name }}</h1>
+	<h1>{{ doc.party_name }}</h1>
+{% endblock %}
+
+{% block page_content %}
+	<div>
+		<p>{{ doc.contract_terms }}</p>
+	</div>
+
+	<!--
+	Placeholder for digitally signing the contract
+	<div class="col-sm-5"></div>
+	<div class="col-sm-7">
+		<a href="/api/method/erpnext.crm.doctype.contract.contract.accept_contract_terms?dn={{ doc.name }}&dt={{ doc.doctype }}&submit_doc=1" class="btn btn-primary btn-sm">I Agree</a>
+	</div>
+	-->
 {% endblock %}
 
 {% block header_actions %}
 	<a class='btn btn-xs btn-default' href='/printview?doctype={{ doc.doctype }}&name={{ doc.name }}&format={{ print_format }}' target="_blank" rel="noopener noreferrer">{{ _("Print") }}</a>
 {% endblock %}
-
-<p>"HELLO WORLD!"</p>
