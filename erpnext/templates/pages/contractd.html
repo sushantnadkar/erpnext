@@ -1,0 +1,68 @@
+{% extends "templates/web.html" %}
+{% from "erpnext/templates/includes/order/order_macros.html" import item_name_and_description %}
+
+{% block breadcrumbs %}
+	{% include "templates/includes/breadcrumbs.html" %}
+{% endblock %}
+
+{% block title %}
+	{{ doc.name }}
+{% endblock %}
+
+{% block header %}
+	<h1>{{ doc.party_name }}</h1>
+{% endblock %}
+
+{% block page_content %}
+	<div id="contract-terms" data-doc-name="{{ doc.name }}" style="overflow: auto; height: 50vh; width: auto;border: 1px solid #c1c1c1; padding: 1.5em;">
+		<p>{{ doc.contract_terms }}</p>
+	</div>
+
+	{% if doc.is_signed != 1 %}
+		<!-- Placeholder for digitally signing the contract -->
+		<div class="row" style="margin-top: 2em;">
+			<div class="col-sm-5">Signee: <input id="contract-signee" type="text"></div>
+			<div class="col-sm-7" style="text-align: right;">
+				<a id="agree-contract" class="btn btn-primary btn-sm" disabled
+					>
+					I Agree
+				</a>
+			</div>
+		</div>
+	{% else %}
+		<div class="col-sm-12">
+			<p>This contract was signed by {{ doc.signee }} on {{ doc.signed_on }}.</p>
+		</div>
+	{% endif %}
+	<script>
+		frappe.ready(function() {
+			$("#agree-contract").on("click", function() {
+				console.log("clicked")
+				frappe.call({
+					method: "erpnext.crm.doctype.contract.contract.accept_contract_terms",
+					args: {
+						dn: $("#contract-terms").data('doc-name'),
+						signee: $('#contract-signee').val(),
+					},
+					freeze: true,
+					freeze_message: __("Saving..."),
+					callback: function(r) {
+						if(!r.exe) {
+							window.location.reload();
+						}
+					}
+				})
+			});
+			$("#contract-terms").bind("scroll", function(e) {
+				var elem = $(e.currentTarget);
+				if( elem[0].scrollHeight - elem.scrollTop() < elem.outerHeight() ) {
+					$("#agree-contract").removeAttr("disabled");
+				}
+			})
+		})
+	</script>
+{% endblock %}
+
+{% block header_actions %}
+	<a class='btn btn-xs btn-default' href='/printview?doctype={{ doc.doctype }}&name={{ doc.name }}&format={{ print_format }}' target="_blank" rel="noopener noreferrer">{{ _("Print") }}</a>
+{% endblock %}
