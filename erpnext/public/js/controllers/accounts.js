@@ -135,7 +135,7 @@ cur_frm.cscript.account_head = function(doc, cdt, cdn) {
 	if(!d.charge_type && d.account_head){
 		frappe.msgprint(__("Please select Charge Type first"));
 		frappe.model.set_value(cdt, cdn, "account_head", "");
-	} else if(d.account_head && d.charge_type!=="Actual") {
+	} else if(d.account_head && d.charge_type!=="Actual" && d.charge_type!=="On Quantity") {
 		frappe.call({
 			type:"GET",
 			method: "erpnext.controllers.accounts_controller.get_tax_rate",
@@ -261,7 +261,7 @@ if(!erpnext.taxes.flags[cur_frm.cscript.tax_table]) {
 
 erpnext.taxes.set_conditional_mandatory_rate_or_amount = function(grid_row) {
 	if(grid_row) {
-		if(grid_row.doc.charge_type==="Actual" || grid_row.doc.charge_type==="On Quantity") {
+		if(grid_row.doc.charge_type==="Actual") {
 			grid_row.toggle_editable("tax_amount", true);
 			grid_row.toggle_reqd("tax_amount", true);
 			grid_row.toggle_editable("rate", false);
