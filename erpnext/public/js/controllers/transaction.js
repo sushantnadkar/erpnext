@@ -658,7 +658,7 @@ erpnext.TransactionController = erpnext.taxes_and_totals.extend({
 	set_actual_charges_based_on_currency: function() {
 		var me = this;
 		$.each(this.frm.doc.taxes || [], function(i, d) {
-			if(d.charge_type == "Actual") {
+			if(d.charge_type == "Actual" || d.charge_type == "On Quantity") {
 				frappe.model.set_value(d.doctype, d.name, "tax_amount",
 					flt(d.tax_amount) / flt(me.frm.doc.conversion_rate));
 			}

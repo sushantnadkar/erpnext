@@ -24,7 +24,7 @@ erpnext.taxes_and_totals = erpnext.payments.extend({
 		}
 	},
 
-	calculate_taxes_and_totals: function(update_paid_amount) {
+	calculate_taxes_and_totals: function(update_paid_amount) { ///////////////////////////////////
 		this.discount_amount_applied = false;
 		this._calculate_taxes_and_totals();
 		this.calculate_discount_amount();
@@ -117,7 +117,7 @@ erpnext.taxes_and_totals = erpnext.payments.extend({
 				"tax_amount_for_current_item", "grand_total_for_current_item",
 				"tax_fraction_for_current_item", "grand_total_fraction_for_current_item"];
 
-			if (cstr(tax.charge_type) != "Actual" &&
+			if ((cstr(tax.charge_type) != "Actual" || cstr(tax.charge_type) != "On Quantity") &&
 				!(me.discount_amount_applied && me.frm.doc.apply_discount_on=="Grand Total")) {
 				tax_fields.push("tax_amount");
 			}
@@ -222,7 +222,7 @@ erpnext.taxes_and_totals = erpnext.payments.extend({
 
 		// maintain actual tax rate based on idx
 		$.each(this.frm.doc["taxes"] || [], function(i, tax) {
-			if (tax.charge_type == "Actual") {
+			if (tax.charge_type == "Actual" || tax.charge_type == "On quantity") {
 				actual_tax_dict[tax.idx] = flt(tax.tax_amount, precision("tax_amount", tax));
 			}
 		});
@@ -234,7 +234,7 @@ erpnext.taxes_and_totals = erpnext.payments.extend({
 				var current_tax_amount = me.get_current_tax_amount(item, tax, item_tax_map);
 
 				// Adjust divisional loss to the last item
-				if (tax.charge_type == "Actual") {
+				if (tax.charge_type == "Actual" || tax.charge_type == "On Quantity") {
 					actual_tax_dict[tax.idx] -= current_tax_amount;
 					if (n == me.frm.doc["items"].length - 1) {
 						current_tax_amount += actual_tax_dict[tax.idx];

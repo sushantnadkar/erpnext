@@ -188,8 +188,10 @@ class calculate_taxes_and_totals(object):
 		for n, item in enumerate(self.doc.get("items")):
 			item_tax_map = self._load_item_tax_rate(item.item_tax_rate)
 			for i, tax in enumerate(self.doc.get("taxes")):
+				print("-------------------------tax--------------------------", tax.as_dict())
 				# tax_amount represents the amount of tax for the current step
 				current_tax_amount = self.get_current_tax_amount(item, tax, item_tax_map)
+				print("-------------------------current_tax_amount----------------------------", current_tax_amount)
 
 				# Adjust divisional loss to the last item
 				if tax.charge_type == "Actual":
@@ -253,13 +255,23 @@ class calculate_taxes_and_totals(object):
 			tax.total = flt(self.doc.get("taxes")[row_idx-1].total + tax_amount, tax.precision("total"))
 
 	def get_current_tax_amount(self, item, tax, item_tax_map):
+		print("==============================get_current_tax_amount================================", tax.as_dict())
 		tax_rate = self._get_tax_rate(tax, item_tax_map)
 		current_tax_amount = 0.0
 
 		if tax.charge_type == "Actual":
 			# distribute the tax amount proportionally to each item row
+			print("-----------------------------", tax.tax_amount, item.qty, tax.precision("tax_amount"))
 			actual = flt(tax.tax_amount, tax.precision("tax_amount"))
+			print("-----------------------------", item.net_amount, actual, self.doc.net_total)
 			current_tax_amount = item.net_amount*actual / self.doc.net_total if self.doc.net_total else 0.0
+
+		elif tax.charge_type == "On Quantity":
+			print("==============================tax.charge_type == On Quantity================================")
+			print("==================", tax.tax_amount, item.qty, tax.precision("tax_amount"))
+			actual = flt(tax.tax_amount, tax.precision("tax_amount"))
+			print("==================", actual, item.qty)
+			current_tax_amount = item.qty * actual
 
 		elif tax.charge_type == "On Net Total":
 			current_tax_amount = (tax_rate / 100.0) * item.net_amount
@@ -270,8 +282,9 @@ class calculate_taxes_and_totals(object):
 			current_tax_amount = (tax_rate / 100.0) * \
 				self.doc.get("taxes")[cint(tax.row_id) - 1].grand_total_for_current_item
 
+		print("==================================before=current_tax_amount=========================================", current_tax_amount)
 		self.set_item_wise_tax(item, tax, tax_rate, current_tax_amount)
-
+		print("===================================current_tax_amount=========================================", current_tax_amount)
 		return current_tax_amount
 
 	def set_item_wise_tax(self, item, tax, tax_rate, current_tax_amount):

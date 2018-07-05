@@ -3914,8 +3914,13 @@
  "issingle": 0, 
  "istable": 0, 
  "max_attachments": 0, 
+<<<<<<< HEAD
  "modified": "2018-07-06 15:56:12.483019", 
  "modified_by": "Administrator", 
+=======
+ "modified": "2018-07-04 02:52:14.090186", 
+ "modified_by": "sushant@digithinkit.com", 
+>>>>>>> WIP mods for quantity based taxation
  "module": "Selling", 
  "name": "Sales Order", 
  "owner": "Administrator", 
