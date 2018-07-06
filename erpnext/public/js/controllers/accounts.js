@@ -272,6 +272,13 @@ erpnext.taxes.set_conditional_mandatory_rate_or_amount = function(grid_row) {
 			grid_row.toggle_editable("tax_amount", false);
 			grid_row.toggle_reqd("tax_amount", false);
 		}
+		if(grid_row.doc.charge_type==="On Quantity") {
+			grid_row.toggle_editable("uom", true);
+			grid_row.toggle_reqd("uom", true);
+		} else {
+			grid_row.toggle_editable("uom", false);
+			grid_row.toggle_reqd("uom", false);
+		}
 	}
 }
 

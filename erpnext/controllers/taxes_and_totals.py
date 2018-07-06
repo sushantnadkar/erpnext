@@ -262,8 +262,11 @@ class calculate_taxes_and_totals(object):
 			current_tax_amount = item.net_amount*actual / self.doc.net_total if self.doc.net_total else 0.0
 
 		elif tax.charge_type == "On Quantity":
-			current_tax_amount = item.qty * tax_rate
+			# TODO: figure out a way to calculate conversion factor for Tax and Item UOM
+			tax_conversion_factor = frappe.db.get_value("UOM Conversion Factor",
+				{"from_uom": tax.uom, "to_uom": item.uom}, "value") if tax.uom != item.uom else 1.0
 
+			current_tax_amount = (tax_rate / tax_conversion_factor) * item.qty
 		elif tax.charge_type == "On Net Total":
 			current_tax_amount = (tax_rate / 100.0) * item.net_amount
 		elif tax.charge_type == "On Previous Row Amount":

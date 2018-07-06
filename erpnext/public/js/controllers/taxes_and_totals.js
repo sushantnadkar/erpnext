@@ -323,7 +323,14 @@ erpnext.taxes_and_totals = erpnext.payments.extend({
 				((item.net_amount / this.frm.doc.net_total) * actual) : 0.0;
 
 		} else if(tax.charge_type == "On Quantity") {
-			current_tax_amount = item.qty * tax_rate;
+			//TODO: get conversion factor from backend and calculate tax
+			frappe.db.get_value("UOM Conversion Factor", {"from_uom": tax.uom, "to_uom": item.uom}, "value",
+				(r) => {
+					console.log("val", r.value);
+					current_tax_amount = (tax_rate / r.value) * item.qty;
+					console.log("ss", current_tax_amount);
+				});
+				console.log("curr tax", current_tax_amount);
 
 		} else if(tax.charge_type == "On Net Total") {
 			current_tax_amount = (tax_rate / 100.0) * item.net_amount;
