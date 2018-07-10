@@ -600,40 +600,51 @@ def update_itemised_tax_data(doc):
 
 @erpnext.allow_regional
 def get_itemised_tax_breakup_header(item_doctype, tax_accounts):
-	return [_("Item"), _("Taxable Amount")] + tax_accounts
+	return [_("Item"), _("Taxable Amount"), _("Taxable Qty")] + tax_accounts
 
 @erpnext.allow_regional
 def get_itemised_tax_breakup_data(doc):
-	itemised_tax = get_itemised_tax(doc.taxes)
+	itemised_tax = get_itemised_tax(doc)
+	print("------------------------------------------------", itemised_tax)
 
 	itemised_taxable_amount = get_itemised_taxable_amount(doc.items)
+	print("------------------------------------------------", itemised_taxable_amount)
 
 	return itemised_tax, itemised_taxable_amount
 
-def get_itemised_tax(taxes):
+def get_itemised_tax(doc):
+	print("taxes~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~", doc.as_dict())
 	itemised_tax = {}
-	for tax in taxes:
+	for tax in doc.taxes:
 		if getattr(tax, "category", None) and tax.category=="Valuation":
 			continue
 
 		item_tax_map = json.loads(tax.item_wise_tax_detail) if tax.item_wise_tax_detail else {}
+		print("===================================", item_tax_map)
 		if item_tax_map:
 			for item_code, tax_data in item_tax_map.items():
 				itemised_tax.setdefault(item_code, frappe._dict())
 
 				tax_rate = 0.0
 				tax_amount = 0.0
+				tax_qty = 0.0
+				item_uom = ""
 
 				if isinstance(tax_data, list):
 					tax_rate = flt(tax_data[0])
 					tax_amount = flt(tax_data[1])
+					tax_qty = [flt(item.qty) for item in doc.items if item.item_code == item_code][0]
+					item_uom = [item.uom for item in doc.items if item.item_code == item_code][0]
 				else:
 					tax_rate = flt(tax_data)
 
 				itemised_tax[item_code][tax.description] = frappe._dict(dict(
 					tax_rate = tax_rate,
+					tax_qty = tax_qty,
+					item_uom = item_uom,
 					tax_amount = tax_amount
 				))
+				print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~", itemised_tax)
 
 	return itemised_tax
 

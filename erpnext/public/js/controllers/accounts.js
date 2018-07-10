@@ -199,7 +199,7 @@ cur_frm.cscript.validate_inclusive_tax = function(tax) { ///////////////////////
 	};
 
 	if(cint(tax.included_in_print_rate)) {
-		if(tax.charge_type == "Actual" || tax.charge_type == "On Quantity") {
+		if(tax.charge_type == "Actual") {
 			// inclusive tax cannot be of type Actual
 			actual_type_error();
 		} else if(tax.charge_type == "On Previous Row Amount" &&

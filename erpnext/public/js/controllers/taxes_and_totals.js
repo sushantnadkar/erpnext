@@ -314,6 +314,7 @@ erpnext.taxes_and_totals = erpnext.payments.extend({
 
 	get_current_tax_amount: function(item, tax, item_tax_map) {
 		var tax_rate = this._get_tax_rate(tax, item_tax_map);
+		console.log("item tax rate", tax_rate);
 		var current_tax_amount = 0.0;
 
 		if(tax.charge_type == "Actual") {
@@ -323,7 +324,7 @@ erpnext.taxes_and_totals = erpnext.payments.extend({
 				((item.net_amount / this.frm.doc.net_total) * actual) : 0.0;
 
 		} else if(tax.charge_type == "On Quantity") {
-			//TODO: get conversion factor from backend and calculate tax
+			// get conversion factor from backend and calculate tax
 			frappe.db.get_value("UOM Conversion Factor", {"from_uom": tax.uom, "to_uom": item.uom}, "value",
 				(r) => {
 					console.log("val", r.value);
@@ -345,7 +346,7 @@ erpnext.taxes_and_totals = erpnext.payments.extend({
 
 		this.set_item_wise_tax(item, tax, tax_rate, current_tax_amount);
 
-		return current_tax_amount;
+			return current_tax_amount;
 	},
 
 	set_item_wise_tax: function(item, tax, tax_rate, current_tax_amount) {

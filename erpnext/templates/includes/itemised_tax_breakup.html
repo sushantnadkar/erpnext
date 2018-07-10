@@ -23,6 +23,18 @@
 						{% if tax_details %}
 							<td class='text-right'>
 								{% if tax_details.tax_rate or not tax_details.tax_amount %}
+									{{ tax_details.tax_qty }} {{ tax_details.item_uom }}
+								{% endif %}
+							</td>
+						{% else %}
+							<td></td>
+						{% endif %}
+					{% endfor %}
+					{% for tax_account in tax_accounts %}
+						{% set tax_details = taxes.get(tax_account) %}
+						{% if tax_details %}
+							<td class='text-right'>
+								{% if tax_details.tax_rate or not tax_details.tax_amount %}
 									({{ tax_details.tax_rate }}%)
 								{% endif %}
 								{{ frappe.utils.fmt_money(tax_details.tax_amount / conversion_rate, None, currency) }}
